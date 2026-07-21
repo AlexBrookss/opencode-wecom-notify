@@ -139,7 +139,6 @@ const plugin: Plugin = async ({ directory }) => {
         }
 
         if (event.type === "session.idle") {
-          if (!canSend("idle")) return
           const sessionID = event.properties.sessionID
           const assistantParts = sessionParts.get(sessionID)
           const userParts = sessionUserParts.get(sessionID)

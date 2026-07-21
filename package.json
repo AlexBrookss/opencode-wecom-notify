@@ -1,6 +1,6 @@
 {
   "name": "opencode-wecom-notify",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "opencode 企业微信通知插件 — 任务完成、权限请求、工具错误等事件推送通知到企业微信群",
   "keywords": [
     "opencode",
