@@ -49,7 +49,7 @@ const plugin: Plugin = async ({ directory }) => {
 
   const sessionParts = new Map<string, string[]>()
   const sessionUserParts = new Map<string, string[]>()
-  const sessionUserMsgIds = new Set<string>()
+  const sessionUserMsgIds = new Map<string, Set<string>>()
   const sessionTitles = new Map<string, string>()
   const sessionEditedFiles = new Map<string, Set<string>>()
 
@@ -75,7 +75,8 @@ const plugin: Plugin = async ({ directory }) => {
         if (event.type === "message.updated") {
           const info = event.properties.info
           if (info.role === "user") {
-            sessionUserMsgIds.add(info.id)
+            if (!sessionUserMsgIds.has(info.sessionID)) sessionUserMsgIds.set(info.sessionID, new Set())
+            sessionUserMsgIds.get(info.sessionID)!.add(info.id)
           }
         }
 
@@ -86,7 +87,8 @@ const plugin: Plugin = async ({ directory }) => {
           if (!sessionUserParts.has(sessionID)) sessionUserParts.set(sessionID, [])
 
           if (part.type === "text" && part.text && !part.synthetic) {
-            if (sessionUserMsgIds.has(part.messageID)) {
+            const userIds = sessionUserMsgIds.get(sessionID)
+            if (userIds && userIds.has(part.messageID)) {
               sessionUserParts.get(sessionID)!.push(part.text)
             } else {
               sessionParts.get(sessionID)!.push(part.text)
@@ -126,7 +128,7 @@ const plugin: Plugin = async ({ directory }) => {
             // 清空状态，避免累积到下一次
             sessionParts.set(sessionID, [])
             sessionUserParts.set(sessionID, [])
-            sessionUserMsgIds.clear()
+            sessionUserMsgIds.delete(sessionID)
             sessionEditedFiles.delete(sessionID)
             return
           }
@@ -155,7 +157,7 @@ const plugin: Plugin = async ({ directory }) => {
 
           sessionParts.set(sessionID, [])
           sessionUserParts.set(sessionID, [])
-          sessionUserMsgIds.clear()
+          sessionUserMsgIds.delete(sessionID)
           sessionEditedFiles.delete(sessionID)
         }
 
@@ -169,12 +171,13 @@ const plugin: Plugin = async ({ directory }) => {
           await sendWecom(text)
         }
 
-        if (event.type === "session.deleted") {
-          sessionParts.delete(event.properties.info.id)
-          sessionUserParts.delete(event.properties.info.id)
-          sessionUserMsgIds.clear()
-          sessionTitles.delete(event.properties.info.id)
-          sessionEditedFiles.delete(event.properties.info.id)
+if (event.type === "session.deleted") {
+          const id = event.properties.info.id
+          sessionParts.delete(id)
+          sessionUserParts.delete(id)
+          sessionUserMsgIds.delete(id)
+          sessionTitles.delete(id)
+          sessionEditedFiles.delete(id)
         }
       } catch (err) {
         console.error("[wecom] 事件处理出错:", err)
