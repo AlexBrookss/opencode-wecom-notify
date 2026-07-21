@@ -1,6 +1,6 @@
 # opencode-wecom-notify
 
-opencode 企业微信通知插件。任务完成后自动推送通知到企业微信群。
+opencode 企业微信通知插件。任务完成、权限请求、工具执行错误等关键事件自动推送通知到企业微信群。
 
 ## 安装
 
@@ -19,14 +19,47 @@ npm install opencode-wecom-notify
 设置环境变量：
 
 ```bash
-export WECOM_WEBHOOK_URL="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"
+export OPENCODE_NOTIFY_WECOM_WEBHOOK="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"
 ```
 
 Webhook URL 获取：企业微信 → 群聊 → 群机器人 → 添加机器人。
 
-## 推送内容
+## 功能
 
-- 💬 用户消息
-- 🤖 AI 回复
-- 📁 变更文件列表
-- 🕐 完成时间
+| 通知类型 | 触发时机 | 说明 |
+|---------|---------|------|
+| ✅ 阶段完成 | session.idle | 包含用户消息和 AI 回复摘要（300字） |
+| 🔐 需要授权 | permission.ask | 需要用户确认权限时通知 |
+| ❌ 工具执行错误 | 工具返回 error 状态 | 失败的工具名称和错误信息 |
+| ❌ 任务出错 | session.error | 会话级别的错误信息 |
+
+所有通知均包含主机名和工作目录，60 秒内同类通知自动去重。
+
+## 环境变量
+
+| 变量 | 必填 | 说明 |
+|------|------|------|
+| `OPENCODE_NOTIFY_WECOM_WEBHOOK` | 是 | 企业微信群机器人 Webhook URL |
+| `OPENCODE_NOTIFY_DEDUPE_WINDOW` | 否 | 去重窗口（秒，默认 60） |
+| `OPENCODE_NOTIFY_HOSTNAME` | 否 | 显示的主机名（默认系统 hostname） |
+
+## 通知示例
+
+```
+✅ 阶段完成
+
+**重构用户模块**
+> 🖥 my-server | /home/user/project
+
+💬 我：
+> 帮我重构用户模块
+
+🤖 opencode：
+已重构用户模块，修改了 service 层和 controller 层...
+
+📁 变更文件：
+- src/user/service.ts
+- src/user/controller.ts
+
+> 🕐 2026-07-21 20:00:00
+```
