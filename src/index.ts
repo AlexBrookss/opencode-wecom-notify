@@ -8,13 +8,11 @@ import os from "os"
  *
  * 环境变量：
  *   OPENCODE_NOTIFY_WECOM_WEBHOOK   企业微信群机器人 Webhook URL（必填）
- *   OPENCODE_NOTIFY_DEDUPE_WINDOW   同类通知去重窗口，秒（默认 60）
  *   OPENCODE_NOTIFY_HOSTNAME        显示的主机名（可选，默认系统 hostname）
  *   OPENCODE_NOTIFY_ENABLED         设为 false 可临时关闭插件（默认 true）
  */
 
 const HOSTNAME = process.env.OPENCODE_NOTIFY_HOSTNAME || os.hostname()
-const DEDUPE_WINDOW = parseInt(process.env.OPENCODE_NOTIFY_DEDUPE_WINDOW || "60", 10)
 const ENABLED = process.env.OPENCODE_NOTIFY_ENABLED !== "false"
 
 function getWebhookUrl(): string | null {
@@ -49,26 +47,15 @@ const plugin: Plugin = async ({ directory }) => {
   }
   if (!ENABLED) return {}
 
-  // 去重：每种通知类型上次发送时间
-  const dedupTimers = new Map<string, number>()
-
-  function canSend(key: string): boolean {
-    const last = dedupTimers.get(key) || 0
-    const now = Date.now()
-    if (now - last < DEDUPE_WINDOW * 1000) return false
-    dedupTimers.set(key, now)
-    return true
-  }
-
-  function header(title: string): string {
-    return `> 🖥 ${HOSTNAME} | ${directory}\n\n`
-  }
-
   const sessionParts = new Map<string, string[]>()
   const sessionUserParts = new Map<string, string[]>()
   const sessionUserMsgIds = new Set<string>()
   const sessionTitles = new Map<string, string>()
   const sessionEditedFiles = new Map<string, Set<string>>()
+
+  function header(title: string): string {
+    return `> 🖥 ${HOSTNAME} | ${directory}\n\n`
+  }
 
   return {
     event: async ({ event }) => {
@@ -107,7 +94,6 @@ const plugin: Plugin = async ({ directory }) => {
           }
 
           if (part.type === "tool" && part.state.status === "error") {
-            if (!canSend("tool_error")) return
             const title = sessionTitles.get(sessionID) || "opencode 会话"
             let text = `## ❌ 工具执行错误\n\n**${title}**\n${header(title)}`
             text += `> 🛠 **${part.tool}**\n> ${part.state.error}\n`
@@ -177,7 +163,6 @@ const plugin: Plugin = async ({ directory }) => {
         }
 
         if (event.type === "session.error") {
-          if (!canSend("error")) return
           const { sessionID, error } = event.properties
           const title = sessionTitles.get(sessionID || "") || "opencode 会话"
           const errMsg = (error?.data && typeof error.data === "object" && "message" in error.data ? String(error.data.message) : JSON.stringify(error)) || ""
