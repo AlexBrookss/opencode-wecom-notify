@@ -2,7 +2,7 @@ import type { Plugin } from "@opencode-ai/plugin"
 import os from "os"
 
 /*
- * opencode 企业微信通知插件 v3.0 - 测试功能
+ * opencode 企业微信通知插件 v3.0
  *
  * 功能：任务完成、权限请求、工具执行错误等关键事件推送通知到企业微信群。
  *
@@ -10,11 +10,6 @@ import os from "os"
  *   OPENCODE_NOTIFY_WECOM_WEBHOOK   企业微信群机器人 Webhook URL（必填）
  *   OPENCODE_NOTIFY_DEDUPE_WINDOW   同类通知去重窗口，秒（默认 60）
  *   OPENCODE_NOTIFY_HOSTNAME        显示的主机名（可选，默认系统 hostname）
- *
- * 快速开始：
- *   1. 企业微信 → 群聊 → 群机器人 → 添加机器人，复制 Webhook URL
- *   2. export OPENCODE_NOTIFY_WECOM_WEBHOOK="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"
- *   3. 重启 opencode
  */
 
 const HOSTNAME = process.env.OPENCODE_NOTIFY_HOSTNAME || os.hostname()
@@ -50,8 +45,6 @@ const plugin: Plugin = async ({ directory }) => {
     console.warn("[wecom] 请设置环境变量 OPENCODE_NOTIFY_WECOM_WEBHOOK")
     return {}
   }
-
-  console.log("[wecom] 插件已加载，webhook 已配置，目录:", directory)
 
   // 去重：每种通知类型上次发送时间
   const dedupTimers = new Map<string, number>()
@@ -205,8 +198,6 @@ const plugin: Plugin = async ({ directory }) => {
     },
 
     "permission.ask": async (input, output) => {
-      try {
-        console.log("[wecom] permission.ask 被调用:", (input as any).permission || input.type, input.title)
         const permType = (input as any).permission || input.type || "未知"
         const permPatterns = (input as any).patterns || (input.pattern ? [input.pattern].flat() : [])
         const title = input.title || sessionTitles.get(input.sessionID) || "opencode 会话"
@@ -215,12 +206,7 @@ const plugin: Plugin = async ({ directory }) => {
         if (permPatterns.length > 0) text += `- 匹配：\`${permPatterns.join(", ")}\`\n`
         text += `\n> 请返回终端确认操作\n`
         text += `> 🕐 ${fmtTime(Date.now())}\n`
-        console.log("[wecom] 正在发送权限请求通知...")
         await sendWecom(text)
-        console.log("[wecom] 权限请求通知发送完成")
-      } catch (err) {
-        console.error("[wecom] permission.ask 处理出错:", err)
-      }
     },
   }
 }

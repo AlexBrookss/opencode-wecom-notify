@@ -2,22 +2,27 @@
   "name": "opencode-wecom-notify",
   "version": "1.0.1",
   "description": "opencode 企业微信通知插件 — 任务完成、权限请求、工具错误等事件推送通知到企业微信群",
-  "keywords": ["opencode", "wecom", "企业微信", "notification"],
+  "keywords": [
+    "opencode",
+    "wecom",
+    "企业微信",
+    "notification"
+  ],
   "homepage": "https://github.com/AlexBrookss/opencode-wecom-notify",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build"
   },
-  "dependencies": {
-    "@opencode-ai/plugin": ">=1.14.0"
-  },
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@opencode-ai/plugin": "^1.18.4",
+    "@types/node": "^22.20.1",
     "typescript": "^5.0.0"
   }
 }

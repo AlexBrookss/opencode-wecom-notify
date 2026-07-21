@@ -52,7 +52,7 @@ Webhook URL 获取：企业微信 → 群聊 → 群机器人 → 添加机器�
 > 🖥 my-server | /home/user/project
 
 💬 我：
-> 帮我重构用户模块
+> 测试插件是否正常工作
 
 🤖 opencode：
 已重构用户模块，修改了 service 层和 controller 层...
