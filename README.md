@@ -1,6 +1,6 @@
 # opencode-wecom-notify
 
-opencode 企业微信通知插件。任务完成、权限请求、工具执行错误等关键事件自动推送通知到企业微信群。
+opencode 企业微信通知插件 v1.0.5
 
 ## 安装
 

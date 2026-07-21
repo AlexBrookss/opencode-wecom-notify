@@ -112,18 +112,6 @@ const plugin: Plugin = async ({ directory }) => {
           }
         }
 
-        // @ts-ignore - permission.asked 事件在 v1 SDK 类型中未定义，但运行时会被发射
-        if ((event as { type: string }).type === "permission.asked") {
-          const perm = (event as any).properties as { permission: string; patterns: string[]; sessionID: string }
-          const title = sessionTitles.get(perm.sessionID) || "opencode 会话"
-          let text = `## 🔐 需要授权\n\n**${title}**\n${header(title)}`
-          text += `- 类型：\`${perm.permission}\`\n`
-          if (perm.patterns && perm.patterns.length > 0) text += `- 匹配：\`${perm.patterns.join(", ")}\`\n`
-          text += `\n> 请返回终端确认操作\n`
-          text += `> 🕐 ${fmtTime(Date.now())}\n`
-          await sendWecom(text)
-        }
-
         if (event.type === "session.idle") {
           const sessionID = event.properties.sessionID
           const assistantParts = sessionParts.get(sessionID)
@@ -132,7 +120,14 @@ const plugin: Plugin = async ({ directory }) => {
           const assistantText = assistantParts?.join("\n").trim() || ""
           const userText = userParts?.join("\n").trim() || ""
           const editedFiles = sessionEditedFiles.get(sessionID)
-          if (!assistantText && !userText && (!editedFiles || editedFiles.size === 0)) return
+          if (!assistantText && !userText && (!editedFiles || editedFiles.size === 0)) {
+            // 清空状态，避免累积到下一次
+            sessionParts.set(sessionID, [])
+            sessionUserParts.set(sessionID, [])
+            sessionUserMsgIds.clear()
+            sessionEditedFiles.delete(sessionID)
+            return
+          }
 
           let text = `## ✅ 阶段完成\n\n**${title}**\n${header(title)}`
 
