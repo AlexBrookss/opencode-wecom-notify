@@ -42,6 +42,7 @@ Webhook URL 获取：企业微信 → 群聊 → 群机器人 → 添加机器�
 | `OPENCODE_NOTIFY_WECOM_WEBHOOK` | 是 | 企业微信群机器人 Webhook URL |
 | `OPENCODE_NOTIFY_DEDUPE_WINDOW` | 否 | 去重窗口（秒，默认 60） |
 | `OPENCODE_NOTIFY_HOSTNAME` | 否 | 显示的主机名（默认系统 hostname） |
+| `OPENCODE_NOTIFY_ENABLED` | 否 | 设为 `false` 可临时关闭插件 |
 
 ## 通知示例
 

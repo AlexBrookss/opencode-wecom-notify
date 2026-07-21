@@ -10,10 +10,12 @@ import os from "os"
  *   OPENCODE_NOTIFY_WECOM_WEBHOOK   企业微信群机器人 Webhook URL（必填）
  *   OPENCODE_NOTIFY_DEDUPE_WINDOW   同类通知去重窗口，秒（默认 60）
  *   OPENCODE_NOTIFY_HOSTNAME        显示的主机名（可选，默认系统 hostname）
+ *   OPENCODE_NOTIFY_ENABLED         设为 false 可临时关闭插件（默认 true）
  */
 
 const HOSTNAME = process.env.OPENCODE_NOTIFY_HOSTNAME || os.hostname()
 const DEDUPE_WINDOW = parseInt(process.env.OPENCODE_NOTIFY_DEDUPE_WINDOW || "60", 10)
+const ENABLED = process.env.OPENCODE_NOTIFY_ENABLED !== "false"
 
 function getWebhookUrl(): string | null {
   return process.env.OPENCODE_NOTIFY_WECOM_WEBHOOK || process.env.WECOM_WEBHOOK_URL || null
@@ -45,6 +47,7 @@ const plugin: Plugin = async ({ directory }) => {
     console.warn("[wecom] 请设置环境变量 OPENCODE_NOTIFY_WECOM_WEBHOOK")
     return {}
   }
+  if (!ENABLED) return {}
 
   // 去重：每种通知类型上次发送时间
   const dedupTimers = new Map<string, number>()
