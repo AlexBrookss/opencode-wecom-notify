@@ -114,6 +114,8 @@ const plugin: Plugin = async ({ directory }) => {
 
         if (event.type === "session.idle") {
           const sessionID = event.properties.sessionID
+          // 等待一小段时间确保所有 parts 已到达
+          await new Promise(r => setTimeout(r, 100))
           const assistantParts = sessionParts.get(sessionID)
           const userParts = sessionUserParts.get(sessionID)
           const title = sessionTitles.get(sessionID) || "opencode 会话"
