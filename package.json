@@ -1,7 +1,7 @@
 {
   "name": "opencode-wecom-notify",
-  "version": "1.0.8",
-  "description": "opencode 企业微信通知插件 — 任务完成、权限请求、工具错误等事件推送通知到企业微信群",
+  "version": "2.0.0",
+  "description": "opencode 企业微信通知插件（支持 opencode V2）— 任务完成、权限请求、工具错误等事件推送通知到企业微信群",
   "keywords": [
     "opencode",
     "wecom",
@@ -20,8 +20,10 @@
     "build": "tsc",
     "prepublishOnly": "npm run build"
   },
+  "dependencies": {
+    "@opencode/plugin": "^2.0.24"
+  },
   "devDependencies": {
-    "@opencode-ai/plugin": "^1.18.4",
     "@types/node": "^22.20.1",
     "typescript": "^5.0.0"
   }

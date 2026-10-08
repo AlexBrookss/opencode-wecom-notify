@@ -1,6 +1,8 @@
 # opencode-wecom-notify
 
-opencode 企业微信通知插件 v1.0.5
+opencode 企业微信通知插件（适配 opencode V2）
+
+> 使用 opencode V1 的用户请安装 `1.0.8` 版本；`2.x` 起使用 V2 插件 API。
 
 ## 安装
 
@@ -13,7 +15,7 @@ npm install opencode-wecom-notify
 在 `~/.config/opencode/opencode.json` 中添加：
 
 ```json
-"plugin": ["opencode-wecom-notify"]
+"plugins": ["opencode-wecom-notify"]
 ```
 
 设置环境变量：
@@ -28,12 +30,12 @@ Webhook URL 获取：企业微信 → 群聊 → 群机器人 → 添加机器�
 
 | 通知类型 | 触发时机 | 说明 |
 |---------|---------|------|
-| ✅ 阶段完成 | session.idle | 包含用户消息和 AI 回复摘要（300字） |
-| 🔐 需要授权 | permission.ask | 需要用户确认权限时通知 |
-| ❌ 工具执行错误 | 工具返回 error 状态 | 失败的工具名称和错误信息 |
-| ❌ 任务出错 | session.error | 会话级别的错误信息 |
+| ✅ 阶段完成 | session.execution.succeeded | 包含用户消息、AI 回复摘要（300字）和变更文件 |
+| 🔐 需要授权 | 权限评估结果为 ask | 需要用户确认权限时通知 |
+| ❌ 工具执行错误 | session.tool.failed | 失败的工具名称和错误信息 |
+| ❌ 任务出错 | session.execution.failed | 会话执行级别的错误信息 |
 
-所有通知均包含主机名和工作目录，60 秒内同类通知自动去重。
+所有通知均包含主机名和工作目录。
 
 ## 环境变量
 
