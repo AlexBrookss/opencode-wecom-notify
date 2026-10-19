@@ -40,7 +40,7 @@ function fmtTime(ts: number): string {
 }
 
 // V2 事件信封：{ id, created, type, location?, data }
-type V2Event = { type: string; data?: Record<string, any> }
+type V2Event = { id?: string; type: string; data?: Record<string, any> }
 
 export default Plugin.define({
   id: "opencode-wecom-notify",
@@ -82,6 +82,64 @@ export default Plugin.define({
       set.add(file)
     }
 
+    // ---- 跨实例去重 ----
+    // V2 会按 location 加载多份插件实例，同一事件每个实例都会收到。
+    // 借助共享的 ctx.storage 抢占“发送权”，保证同一事件只发一条通知。
+    let seq = 0
+    async function claim(key: string): Promise<boolean> {
+      const token = `${Date.now().toString(36)}-${(seq++).toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+      try {
+        if (await ctx.storage.get(key)) return false
+        await ctx.storage.set(key, { token, at: Date.now() })
+        // 确认窗口：并发实例几乎同时抢标记，后写入者获胜，只有它继续发送
+        await new Promise((r) => setTimeout(r, 80 + Math.random() * 120))
+        const now = (await ctx.storage.get(key)) as unknown as { token?: string } | undefined
+        return !!now && now.token === token
+      } catch (err) {
+        console.error("[wecom] 去重检查失败，按原逻辑发送:", err)
+        return true
+      }
+    }
+
+    function hash(s: string): string {
+      let h = 2166136261
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i)
+        h = Math.imul(h, 16777619)
+      }
+      return (h >>> 0).toString(36)
+    }
+
+    // 优先用事件全局唯一 id 作为去重键；没有 id 时退回“内容指纹 + 10 秒时间桶”
+    function dedupKey(event: V2Event, extra: string): string {
+      return event.id ? `sent/evt/${event.id}` : `sent/fp/${hash(`${extra}|${Math.floor(Date.now() / 10000)}`)}`
+    }
+
+    async function sendOnce(key: string, content: string): Promise<void> {
+      if (!(await claim(key))) return
+      await sendWecom(content)
+      if (Math.random() < 0.05) void prune()
+    }
+
+    // 定期清理 6 小时前的去重标记，避免 ctx.storage 无限增长
+    async function prune(): Promise<void> {
+      try {
+        const cutoff = Date.now() - 6 * 60 * 60 * 1000
+        let after: string | undefined
+        for (;;) {
+          const page = await ctx.storage.scan({ prefix: "sent/", after, limit: 200 })
+          for (const entry of page.entries) {
+            const v = entry.value as { at?: number } | undefined
+            if (!v || typeof v.at !== "number" || v.at < cutoff) await ctx.storage.remove(entry.key)
+          }
+          if (!page.next) break
+          after = page.next
+        }
+      } catch (err) {
+        console.error("[wecom] 去重标记清理失败:", err)
+      }
+    }
+
     // 权限请求通知（V1 的 permission.ask）
     await ctx.permission.hook("evaluate", async (event) => {
       if (event.effect !== "ask") return
@@ -93,7 +151,8 @@ export default Plugin.define({
         if (resources.length > 0) text += `- 匹配：\`${resources.join(", ")}\`\n`
         text += `\n> 请返回终端确认操作\n`
         text += `> 🕐 ${fmtTime(Date.now())}\n`
-        await sendWecom(text)
+        const key = `sent/perm/${hash(`${event.sessionID}|${event.action}|${resources.join(",")}|${Math.floor(Date.now() / 10000)}`)}`
+        await sendOnce(key, text)
       } catch (err) {
         console.error("[wecom] 权限通知出错:", err)
       }
@@ -153,7 +212,7 @@ export default Plugin.define({
               let text = `## ❌ 工具执行错误\n\n**${title}**\n${header(title)}`
               text += `> 🛠 **${toolName}**\n> ${errMsg}\n`
               text += `\n> 🕐 ${fmtTime(Date.now())}\n`
-              await sendWecom(text)
+              await sendOnce(dedupKey(event, `${d.sessionID}|tool.failed|${d.id}|${errMsg}`), text)
               if (d.id) callNames.delete(String(d.id))
               break
             }
@@ -193,8 +252,7 @@ export default Plugin.define({
               }
 
               text += `> 🕐 ${fmtTime(Date.now())}\n`
-              await sendWecom(text)
-
+              await sendOnce(dedupKey(event, `${sessionID}|execution.succeeded`), text)
               sessionTexts.set(sessionID, [])
               sessionUserTexts.set(sessionID, [])
               sessionEditedFiles.delete(sessionID)
@@ -209,7 +267,7 @@ export default Plugin.define({
               let text = `## ❌ 任务出错\n\n**${title}**\n${header(title)}`
               text += "```\n" + errMsg + "\n```\n"
               text += `\n> 🕐 ${fmtTime(Date.now())}\n`
-              await sendWecom(text)
+              await sendOnce(dedupKey(event, `${sessionID}|execution.failed|${errMsg}`), text)
               break
             }
 
