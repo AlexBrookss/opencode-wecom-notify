@@ -39,6 +39,8 @@ opencode service start   # set 会先停掉后台服务，这里重新启动；�
 opencode service get env
 ```
 
+> 说明：`service set env` 会把变量持久化到 `~/.config/opencode/service.json`，重启服务（或重启桌面应用）后自动传给后台服务进程。
+
 Webhook URL 获取：企业微信 → 群聊 → 群机器人 → 添加机器人。
 
 ## 功能
