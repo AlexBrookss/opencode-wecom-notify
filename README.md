@@ -18,10 +18,25 @@ npm install opencode-wecom-notify
 "plugins": ["opencode-wecom-notify"]
 ```
 
-设置环境变量：
+### 设置环境变量
+
+**终端启动的 OpenCode**（`opencode`、`opencode serve` / opweb 等）直接导出即可：
 
 ```bash
 export OPENCODE_NOTIFY_WECOM_WEBHOOK="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"
+```
+
+**OpenCode 桌面版**：桌面端拉起的后台服务不会继承 shell 里的 `export`，需要写入托管服务配置：
+
+```bash
+opencode service set env OPENCODE_NOTIFY_WECOM_WEBHOOK "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"
+opencode service start   # set 会先停掉后台服务，这里重新启动；桌面端会自动重连
+```
+
+验证是否写入成功：
+
+```bash
+opencode service get env
 ```
 
 Webhook URL 获取：企业微信 → 群聊 → 群机器人 → 添加机器人。
@@ -65,3 +80,17 @@ Webhook URL 获取：企业微信 → 群聊 → 群机器人 → 添加机器�
 
 > 🕐 2026-07-21 20:00:00
 ```
+
+## 排障
+
+收不到通知时，按顺序检查：
+
+1. 插件是否加载：`opencode plugin list`，应能看到 `opencode-wecom-notify`；
+2. webhook 是否可用（正常返回 `{"errcode":0,"errmsg":"ok"}`）：
+
+   ```bash
+   curl -s -X POST "你的 webhook 地址" -H 'Content-Type: application/json' \
+     -d '{"msgtype":"text","text":{"content":"连通性测试"}}'
+   ```
+
+3. 桌面版确认服务配置里有变量：`opencode service get env`（见上文"设置环境变量"）。
